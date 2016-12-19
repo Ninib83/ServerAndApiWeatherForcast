@@ -15,10 +15,21 @@ namespace UpdateDBForecast
     {
         public static Timer aTimer;
         static HttpClient client = new HttpClient();
-        static List<Temperature> ListOfTemperature = new List<Temperature>();
+        static List<Temperature> ListOfTemperatures = new List<Temperature>();
+
         static Random rnd1 = new Random();
         static Random rnd2 = new Random();
-        static int round = 0;
+        private static readonly Random random = new Random();
+        private static readonly object syncLock = new object();
+        private static int round=0;
+
+        public static int RandomNumber(int min, int max)
+        {
+            lock (syncLock)
+            {
+                return random.Next(max, min);
+            }
+        }
 
         static void Main(string[] args)
         {
@@ -34,7 +45,7 @@ namespace UpdateDBForecast
 
             try
             {
-                aTimer = new Timer(5000);
+                aTimer = new Timer(7000);
                 aTimer.Elapsed += new ElapsedEventHandler(progress);
                 aTimer.AutoReset = true;
                 aTimer.Enabled = true;
@@ -49,22 +60,24 @@ namespace UpdateDBForecast
         }
 
 
-        public async static void progress(object source, ElapsedEventArgs e)
+        private async static void progress(object source, ElapsedEventArgs e)
         {
-            //ListOfTemperatures = new List<Temperature>();
             Console.Clear();
 
-            foreach (var temp in ListOfTemperature)
+            foreach (Temperature temp in ListOfTemperatures)
             {
-                int value1 = rnd1.Next(-15, 25);
-                int value2 = rnd2.Next(-20, 30);
+                int value1 = random.Next(-15, 25);
+                int value2 = random.Next(-20, 30);
                 int result = (value1 + value2);
                 round = 1;
                 temp.CityTemperature = +result-- / 2;
+                aTimer = new Timer(3000);
                 round = 2;
                 temp.CityTemperature = +result-- / 3;
+                aTimer = new Timer(2000);
                 round = 3;
                 temp.CityTemperature = +result-- / 2;
+                aTimer = new Timer(1000);
                 round++;
                 temp.CityTemperature = +result-- / round++;
                 await UpdateTemperatureAsync(temp);
@@ -93,7 +106,7 @@ namespace UpdateDBForecast
             foreach (var t in temp)
             {
                 Console.WriteLine("{0} {1}", t.CityName, t.CityTemperature);
-                ListOfTemperature.Add(t);
+                ListOfTemperatures.Add(t);
             }
 
             Console.ReadLine();
